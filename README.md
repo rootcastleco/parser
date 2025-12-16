@@ -14,6 +14,33 @@ Birden fazla GPS sağlayıcısını destekleyen birleşik GPS veri sunucusu.
   - Cihaza bip gönderme
   - Konum güncelleme isteği
 
+**Trackimo veri örneği** (cihaz listesi yanıtı):
+```json
+[
+  {
+    "device_id": 1234567,
+    "provider": "trackimo",
+    "name": "Araç 1",
+    "status": "active",
+    "last_location": {
+      "device_id": 1234567,
+      "provider": "trackimo",
+      "latitude": 41.015137,
+      "longitude": 28.97953,
+      "altitude": 42.0,
+      "speed": 12.3,
+      "course": 90,
+      "battery": 88,
+      "timestamp": "2024-06-01T12:34:56Z",
+      "address": "Beyoğlu/İstanbul",
+      "odometer": 15230.4,
+      "is_moving": true,
+      "is_gps_fix": true
+    }
+  }
+]
+```
+
 ### 2. Arvento
 - **Kaynak**: [arvento-api-library](https://github.com/secgin/arvento-api-library)
 - **API Türü**: SOAP API
@@ -22,6 +49,34 @@ Birden fazla GPS sağlayıcısını destekleyen birleşik GPS veri sunucusu.
   - Gerçek zamanlı konum
   - Adres bilgisi
   - Kilometre sayacı
+
+**Arvento veri örneği** (plaka sorgusu ile dönen son paket):
+```json
+{
+  "device_id": "K1200098807",
+  "provider": "arvento",
+  "latitude": 40.97681,
+  "longitude": 34.810963,
+  "altitude": 0,
+  "speed": 0,
+  "course": 0,
+  "timestamp": "2023-06-01T03:42:23Z",
+  "address": "Ömer Derindere Blv., Cumhuriyet Mh., Osmancık, Çorum, Türkiye",
+  "odometer": 24507,
+  "is_moving": false,
+  "raw_data": {
+    "strNode": "K1200098807",
+    "dtGMTDateTime": "2023-06-01T03:42:23",
+    "dLatitude": 40.97681,
+    "dLongitude": 34.810963,
+    "dSpeed": 0,
+    "strAddress": "Ömer Derindere Blv., Cumhuriyet Mh., Osmancık, Çorum, Türkiye",
+    "nCourse": 0,
+    "dOdometer": 24507,
+    "nAltitude": 0
+  }
+}
+```
 
 ## 🚀 Kurulum
 
