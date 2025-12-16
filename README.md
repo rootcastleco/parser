@@ -124,6 +124,10 @@ pip install -r requirements.txt
 python -m src.server
 ```
 
+### Offline Modu
+
+Gerçek API'lere bağlanmadan test etmek için bağlantı isteklerinde `"offline": true` parametresi gönderebilirsiniz. Bu durumda Trackimo ve Arvento parser'ları örnek cihaz verileriyle çalışır.
+
 ## 📖 API Kullanımı
 
 Sunucu başladıktan sonra API dokümantasyonu: `http://localhost:8000/docs`

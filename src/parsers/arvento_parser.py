@@ -54,7 +54,7 @@ class ArventoParser(BaseParser):
         nAltitude: 0
     """
     
-    def __init__(self, host: str, username: str, pin1: str, pin2: str):
+    def __init__(self, host: str, username: str, pin1: str, pin2: str, offline: bool = False):
         super().__init__()
         self._host = host
         self._username = username
@@ -62,6 +62,9 @@ class ArventoParser(BaseParser):
         self._pin2 = pin2
         self._client = None
         self._connected = False
+        self._offline = offline
+        self._mock_nodes: Dict[str, str] = {}
+        self._mock_locations: Dict[str, GPSLocation] = {}
     
     async def connect(self) -> bool:
         """
@@ -71,6 +74,12 @@ class ArventoParser(BaseParser):
             bool: Bağlantı başarılı ise True
         """
         try:
+            if self._offline:
+                self._connected = True
+                self._load_mock_data()
+                _logger.info("Arvento offline mode enabled; using mock data")
+                return True
+
             if ZEEP_AVAILABLE:
                 loop = asyncio.get_event_loop()
                 self._client = await loop.run_in_executor(
@@ -106,6 +115,9 @@ class ArventoParser(BaseParser):
         full_params = {**self._get_auth_params(), **params}
 
         try:
+            if self._offline:
+                _logger.debug("Offline mode: skipping SOAP request %s", method)
+                return None
             if ZEEP_AVAILABLE and self._client:
                 loop = asyncio.get_event_loop()
                 result = await loop.run_in_executor(
@@ -210,6 +222,9 @@ class ArventoParser(BaseParser):
             "LicensePlate": license_plate
         })
 
+        if self._offline:
+            return self._mock_nodes.get(license_plate)
+
         if result:
             if hasattr(result, "GetNodeFromLicensePlateResult"):
                 return result.GetNodeFromLicensePlateResult
@@ -232,6 +247,9 @@ class ArventoParser(BaseParser):
             "Node": node,
             "Language": "0"
         })
+
+        if self._offline:
+            return self._mock_locations.get(node)
 
         if result:
             return self._parse_vehicle_status(node, result)
@@ -367,4 +385,53 @@ class ArventoParser(BaseParser):
         """
         _logger.warning("Arvento history endpoint not implemented in source library")
         return []
+
+    def _load_mock_data(self) -> None:
+        """Offline mod için örnek araç verileri yükle"""
+        now = datetime.now()
+        sample_locations = {
+            "NODE001": GPSLocation(
+                device_id="NODE001",
+                provider=GPSProvider.ARVENTO,
+                latitude=40.978,
+                longitude=29.092,
+                speed=12.3,
+                course=45,
+                odometer=25010,
+                address="İstanbul, Türkiye",
+                timestamp=now - timedelta(minutes=3),
+                is_moving=True,
+                raw_data={"source": "mock"}
+            ),
+            "NODE002": GPSLocation(
+                device_id="NODE002",
+                provider=GPSProvider.ARVENTO,
+                latitude=38.4237,
+                longitude=27.1428,
+                speed=0.0,
+                course=0,
+                odometer=10200,
+                address="İzmir, Türkiye",
+                timestamp=now - timedelta(minutes=7),
+                is_moving=False,
+                raw_data={"source": "mock"}
+            ),
+        }
+
+        self._mock_nodes = {
+            "34ABC123": "NODE001",
+            "35XYZ789": "NODE002",
+        }
+
+        self._mock_locations = sample_locations
+
+        for node, location in sample_locations.items():
+            self._devices[node] = GPSDevice(
+                device_id=node,
+                provider=GPSProvider.ARVENTO,
+                name=f"Mock Vehicle {node}",
+                status="active",
+                last_location=location,
+                raw_data={"source": "mock"}
+            )
 
