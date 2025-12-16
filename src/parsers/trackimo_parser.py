@@ -35,10 +35,11 @@ class TrackimoParser(BaseParser):
     API_PORT = 443
     API_PROTOCOL = "https"
     
-    def __init__(self, client_id: str, client_secret: str):
+    def __init__(self, client_id: str, client_secret: str, offline: bool = False):
         super().__init__()
         self._client_id = client_id
         self._client_secret = client_secret
+        self._offline = offline
         self._session: Optional[requests.Session] = None
         self._access_token: Optional[str] = None
         self._refresh_token: Optional[str] = None
@@ -50,6 +51,7 @@ class TrackimoParser(BaseParser):
         self._api_url = f"{self.API_PROTOCOL}://{self.API_HOST}:{self.API_PORT}/api/v{self.API_VERSION}"
         self._internal_url = f"{self.API_PROTOCOL}://{self.API_HOST}:{self.API_PORT}/api/internal/v1"
         self._login_url = f"{self.API_PROTOCOL}://{self.API_HOST}:{self.API_PORT}/api/internal/v2/user/login"
+        self._mock_history: Dict[str, List[GPSLocation]] = {}
 
     async def connect(self, username: str = None, password: str = None, refresh_token: str = None) -> bool:
         """
@@ -63,6 +65,16 @@ class TrackimoParser(BaseParser):
         self._username = username
         self._password = password
 
+        if self._offline:
+            self._session = None
+            self._access_token = "offline"
+            self._refresh_token = "offline"
+            self._token_expires = datetime.now() + timedelta(days=365)
+            self._account_id = 0
+            self._load_mock_data()
+            _logger.info("Trackimo offline mode enabled; using mock data")
+            return True
+        
         if refresh_token:
             return await self._restore_session(refresh_token)
         
@@ -177,6 +189,9 @@ class TrackimoParser(BaseParser):
         use_internal: bool = False
     ) -> Optional[Dict]:
         """API isteği yap"""
+        if self._offline:
+            _logger.debug("Offline mode: skipping API request %s %s", method, path)
+            return None
         if not self._session:
             self._session = requests.Session()
         
@@ -232,6 +247,9 @@ class TrackimoParser(BaseParser):
     async def get_devices(self) -> List[GPSDevice]:
         """Tüm cihazları getir"""
         self._ensure_authenticated()
+
+        if self._offline:
+            return list(self._devices.values())
 
         devices = []
         page = 1
@@ -290,6 +308,9 @@ class TrackimoParser(BaseParser):
         if not device_ids:
             return
 
+        if self._offline:
+            return
+
         data = await self._api_request(
             "POST",
             f"accounts/{self._account_id}/locations/filter",
@@ -336,6 +357,9 @@ class TrackimoParser(BaseParser):
         """Belirli bir cihazın konumunu getir"""
         self._ensure_authenticated()
 
+        if self._offline:
+            return self._devices.get(device_id, GPSDevice(device_id=device_id, provider=GPSProvider.TRACKIMO)).last_location
+
         data = await self._api_request(
             "GET",
             f"accounts/{self._account_id}/devices/{device_id}/location"
@@ -355,6 +379,9 @@ class TrackimoParser(BaseParser):
     ) -> List[GPSLocation]:
         """Cihaz konum geçmişini getir"""
         self._ensure_authenticated()
+
+        if self._offline:
+            return self._mock_history.get(device_id, [])
 
         if not start_date:
             start_date = datetime.now() - timedelta(hours=24)
@@ -385,6 +412,9 @@ class TrackimoParser(BaseParser):
         """Cihaza bip sesi gönder"""
         self._ensure_authenticated()
 
+        if self._offline:
+            return device_id in self._devices
+
         data = await self._api_request(
             "POST",
             f"accounts/{self._account_id}/devices/ops/beep",
@@ -395,6 +425,9 @@ class TrackimoParser(BaseParser):
     async def request_location(self, device_id: str) -> bool:
         """Cihazdan konum güncellemesi iste"""
         self._ensure_authenticated()
+
+        if self._offline:
+            return device_id in self._devices
 
         data = await self._api_request(
             "POST",
@@ -412,4 +445,66 @@ class TrackimoParser(BaseParser):
             "expires": self._token_expires.isoformat() if self._token_expires else None,
             "account_id": self._account_id
         }
+
+    def _load_mock_data(self) -> None:
+        """Offline mod için örnek cihaz ve konum verileri yükle"""
+        now = datetime.now()
+        locations = {
+            "1001": GPSLocation(
+                device_id="1001",
+                provider=GPSProvider.TRACKIMO,
+                latitude=41.0082,
+                longitude=28.9784,
+                altitude=35.0,
+                speed=48.5,
+                battery=85,
+                timestamp=now - timedelta(minutes=5),
+                is_moving=True,
+                is_gps_fix=True,
+                raw_data={"source": "mock"}
+            ),
+            "1002": GPSLocation(
+                device_id="1002",
+                provider=GPSProvider.TRACKIMO,
+                latitude=39.9208,
+                longitude=32.8541,
+                altitude=20.0,
+                speed=0,
+                battery=92,
+                timestamp=now - timedelta(minutes=2),
+                is_moving=False,
+                is_gps_fix=True,
+                raw_data={"source": "mock"}
+            ),
+        }
+
+        self._mock_history = {
+            device_id: [
+                GPSLocation(
+                    device_id=device_id,
+                    provider=GPSProvider.TRACKIMO,
+                    latitude=loc.latitude,
+                    longitude=loc.longitude,
+                    altitude=loc.altitude,
+                    speed=loc.speed,
+                    battery=loc.battery,
+                    timestamp=loc.timestamp - timedelta(minutes=15),
+                    is_moving=loc.is_moving,
+                    is_gps_fix=loc.is_gps_fix,
+                    raw_data={"source": "mock-history"}
+                ),
+                loc,
+            ]
+            for device_id, loc in locations.items()
+        }
+
+        for device_id, location in locations.items():
+            self._devices[device_id] = GPSDevice(
+                device_id=device_id,
+                provider=GPSProvider.TRACKIMO,
+                name=f"Mock Device {device_id}",
+                status="active",
+                last_location=location,
+                raw_data={"source": "mock"}
+            )
 
