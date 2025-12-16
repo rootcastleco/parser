@@ -28,12 +28,14 @@ class TrackimoCredentials(BaseModel):
     client_secret: str
     username: str
     password: str
+    offline: bool = False
 
 
 class TrackimoRefreshCredentials(BaseModel):
     client_id: str
     client_secret: str
     refresh_token: str
+    offline: bool = False
 
 
 class ArventoCredentials(BaseModel):
@@ -41,6 +43,7 @@ class ArventoCredentials(BaseModel):
     username: str
     pin1: str
     pin2: str
+    offline: bool = False
 
 
 class AddVehicleRequest(BaseModel):
@@ -125,7 +128,8 @@ async def trackimo_connect(credentials: TrackimoCredentials):
     """
     parser = TrackimoParser(
         client_id=credentials.client_id,
-        client_secret=credentials.client_secret
+        client_secret=credentials.client_secret,
+        offline=credentials.offline
     )
     
     success = await parser.connect(
@@ -152,7 +156,8 @@ async def trackimo_restore(credentials: TrackimoRefreshCredentials):
     """
     parser = TrackimoParser(
         client_id=credentials.client_id,
-        client_secret=credentials.client_secret
+        client_secret=credentials.client_secret,
+        offline=credentials.offline
     )
     
     success = await parser.connect(refresh_token=credentials.refresh_token)
@@ -244,7 +249,8 @@ async def arvento_connect(credentials: ArventoCredentials):
         host=credentials.host,
         username=credentials.username,
         pin1=credentials.pin1,
-        pin2=credentials.pin2
+        pin2=credentials.pin2,
+        offline=credentials.offline
     )
     
     success = await parser.connect()
