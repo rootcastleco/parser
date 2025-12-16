@@ -7,7 +7,7 @@ Arvento, SOAP tabanlı bir API kullanır ve araç takip sistemleri için tasarla
 """
 import logging
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Any
 from xml.etree import ElementTree
 
@@ -104,7 +104,7 @@ class ArventoParser(BaseParser):
     async def _soap_request(self, method: str, params: Dict) -> Optional[Any]:
         """SOAP isteği yap"""
         full_params = {**self._get_auth_params(), **params}
-        
+
         try:
             if ZEEP_AVAILABLE and self._client:
                 loop = asyncio.get_event_loop()
@@ -209,7 +209,7 @@ class ArventoParser(BaseParser):
         result = await self._soap_request("GetNodeFromLicensePlate", {
             "LicensePlate": license_plate
         })
-        
+
         if result:
             if hasattr(result, "GetNodeFromLicensePlateResult"):
                 return result.GetNodeFromLicensePlateResult
@@ -232,10 +232,10 @@ class ArventoParser(BaseParser):
             "Node": node,
             "Language": "0"
         })
-        
+
         if result:
             return self._parse_vehicle_status(node, result)
-        
+
         return None
     
     def _parse_vehicle_status(self, node: str, data: Any) -> GPSLocation:
@@ -334,7 +334,7 @@ class ArventoParser(BaseParser):
         if not node:
             _logger.error(f"Vehicle not found: {license_plate}")
             return None
-        
+
         location = await self.get_vehicle_status(node)
         
         device = GPSDevice(

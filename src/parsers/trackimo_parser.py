@@ -50,7 +50,7 @@ class TrackimoParser(BaseParser):
         self._api_url = f"{self.API_PROTOCOL}://{self.API_HOST}:{self.API_PORT}/api/v{self.API_VERSION}"
         self._internal_url = f"{self.API_PROTOCOL}://{self.API_HOST}:{self.API_PORT}/api/internal/v1"
         self._login_url = f"{self.API_PROTOCOL}://{self.API_HOST}:{self.API_PORT}/api/internal/v2/user/login"
-    
+
     async def connect(self, username: str = None, password: str = None, refresh_token: str = None) -> bool:
         """
         Trackimo API'ye bağlan
@@ -62,7 +62,7 @@ class TrackimoParser(BaseParser):
         """
         self._username = username
         self._password = password
-        
+
         if refresh_token:
             return await self._restore_session(refresh_token)
         
@@ -168,10 +168,10 @@ class TrackimoParser(BaseParser):
             self._account_id = data["accountId"]
     
     async def _api_request(
-        self, 
-        method: str, 
-        path: str, 
-        params: Dict = None, 
+        self,
+        method: str,
+        path: str,
+        params: Dict = None,
         json: Dict = None,
         no_auth: bool = False,
         use_internal: bool = False
@@ -232,34 +232,34 @@ class TrackimoParser(BaseParser):
     async def get_devices(self) -> List[GPSDevice]:
         """Tüm cihazları getir"""
         self._ensure_authenticated()
-        
+
         devices = []
         page = 1
         limit = 20
-        
+
         while True:
             data = await self._api_request(
                 "GET",
                 f"accounts/{self._account_id}/devices",
                 params={"limit": limit, "page": page}
             )
-            
+
             if not data:
                 break
-            
+
             for device_data in data:
                 device = await self._parse_device(device_data)
                 if device:
                     devices.append(device)
                     self._devices[device.device_id] = device
-            
+
             if len(data) < limit:
                 break
             page += 1
-        
+
         # Get locations for all devices
         await self._fetch_all_locations()
-        
+
         return list(self._devices.values())
     
     async def _parse_device(self, data: Dict) -> Optional[GPSDevice]:
@@ -289,7 +289,7 @@ class TrackimoParser(BaseParser):
         device_ids = list(self._devices.keys())
         if not device_ids:
             return
-        
+
         data = await self._api_request(
             "POST",
             f"accounts/{self._account_id}/locations/filter",
@@ -335,7 +335,7 @@ class TrackimoParser(BaseParser):
     async def get_device_location(self, device_id: str) -> Optional[GPSLocation]:
         """Belirli bir cihazın konumunu getir"""
         self._ensure_authenticated()
-        
+
         data = await self._api_request(
             "GET",
             f"accounts/{self._account_id}/devices/{device_id}/location"
@@ -355,7 +355,7 @@ class TrackimoParser(BaseParser):
     ) -> List[GPSLocation]:
         """Cihaz konum geçmişini getir"""
         self._ensure_authenticated()
-        
+
         if not start_date:
             start_date = datetime.now() - timedelta(hours=24)
         if not end_date:
@@ -384,18 +384,18 @@ class TrackimoParser(BaseParser):
     async def send_beep(self, device_id: str, period: int = 2, sound: int = 1) -> bool:
         """Cihaza bip sesi gönder"""
         self._ensure_authenticated()
-        
+
         data = await self._api_request(
             "POST",
             f"accounts/{self._account_id}/devices/ops/beep",
             json={"devices": [int(device_id)], "beepPeriod": period, "beepType": sound}
         )
         return data is not None
-    
+
     async def request_location(self, device_id: str) -> bool:
         """Cihazdan konum güncellemesi iste"""
         self._ensure_authenticated()
-        
+
         data = await self._api_request(
             "POST",
             f"accounts/{self._account_id}/devices/ops/getLocation",
