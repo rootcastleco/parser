@@ -41,6 +41,25 @@ Birden fazla GPS sağlayıcısını destekleyen birleşik GPS veri sunucusu.
 ]
 ```
 
+**Trackimo API mesajı örneği** (`/trackimo/devices/{id}/location` yanıtı):
+```json
+{
+  "device_id": 1234567,
+  "provider": "trackimo",
+  "latitude": 41.015137,
+  "longitude": 28.97953,
+  "altitude": 42.0,
+  "speed": 12.3,
+  "course": 90,
+  "battery": 88,
+  "timestamp": "2024-06-01T12:34:56Z",
+  "address": "Beyoğlu/İstanbul",
+  "odometer": 15230.4,
+  "is_moving": true,
+  "is_gps_fix": true
+}
+```
+
 ### 2. Arvento
 - **Kaynak**: [arvento-api-library](https://github.com/secgin/arvento-api-library)
 - **API Türü**: SOAP API
@@ -75,6 +94,23 @@ Birden fazla GPS sağlayıcısını destekleyen birleşik GPS veri sunucusu.
     "dOdometer": 24507,
     "nAltitude": 0
   }
+}
+```
+
+**Arvento API mesajı örneği** (`/arvento/vehicles/plate/{plate}/location` yanıtı):
+```json
+{
+  "device_id": "34ABC123",
+  "provider": "arvento",
+  "latitude": 41.015247,
+  "longitude": 28.987227,
+  "altitude": 18,
+  "speed": 52,
+  "course": 275,
+  "timestamp": "2024-05-20T08:15:32Z",
+  "address": "Kasımpaşa, İstanbul",
+  "odometer": 31250,
+  "is_moving": true
 }
 ```
 
