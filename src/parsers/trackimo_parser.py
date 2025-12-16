@@ -224,8 +224,15 @@ class TrackimoParser(BaseParser):
         self._access_token = None
         self._refresh_token = None
     
+    def _ensure_authenticated(self) -> None:
+        """Kimlik doğrulamasının yapıldığından emin ol"""
+        if self._account_id is None:
+            raise RuntimeError("Not authenticated. Call connect() first.")
+    
     async def get_devices(self) -> List[GPSDevice]:
         """Tüm cihazları getir"""
+        self._ensure_authenticated()
+        
         devices = []
         page = 1
         limit = 20
@@ -327,6 +334,8 @@ class TrackimoParser(BaseParser):
     
     async def get_device_location(self, device_id: str) -> Optional[GPSLocation]:
         """Belirli bir cihazın konumunu getir"""
+        self._ensure_authenticated()
+        
         data = await self._api_request(
             "GET",
             f"accounts/{self._account_id}/devices/{device_id}/location"
@@ -345,6 +354,8 @@ class TrackimoParser(BaseParser):
         page: int = 1
     ) -> List[GPSLocation]:
         """Cihaz konum geçmişini getir"""
+        self._ensure_authenticated()
+        
         if not start_date:
             start_date = datetime.now() - timedelta(hours=24)
         if not end_date:
@@ -372,6 +383,8 @@ class TrackimoParser(BaseParser):
     
     async def send_beep(self, device_id: str, period: int = 2, sound: int = 1) -> bool:
         """Cihaza bip sesi gönder"""
+        self._ensure_authenticated()
+        
         data = await self._api_request(
             "POST",
             f"accounts/{self._account_id}/devices/ops/beep",
@@ -381,6 +394,8 @@ class TrackimoParser(BaseParser):
     
     async def request_location(self, device_id: str) -> bool:
         """Cihazdan konum güncellemesi iste"""
+        self._ensure_authenticated()
+        
         data = await self._api_request(
             "POST",
             f"accounts/{self._account_id}/devices/ops/getLocation",

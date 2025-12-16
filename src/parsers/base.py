@@ -2,6 +2,8 @@
 """
 Base Parser - Abstract base class for GPS parsers
 """
+import asyncio
+import inspect
 from abc import ABC, abstractmethod
 from typing import List, Optional, Callable, Any
 from ..models import GPSDevice, GPSLocation
@@ -51,5 +53,8 @@ class BaseParser(ABC):
     async def _emit_location_update(self, location: GPSLocation) -> None:
         """Emit location update to registered callback"""
         if self._on_location_update:
-            await self._on_location_update(location)
+            result = self._on_location_update(location)
+            # Async callback ise await et, sync ise direkt çalıştır
+            if asyncio.iscoroutine(result):
+                await result
 
