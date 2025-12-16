@@ -1,0 +1,22 @@
+# GPS Parser Server Dependencies
+# Core
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.5.0
+
+# HTTP Client
+requests>=2.31.0
+httpx>=0.25.0
+
+# Async Support
+asyncio>=3.4.3
+
+# SOAP Client (for Arvento)
+zeep>=4.2.1
+
+# Retry Logic
+backoff>=2.2.1
+
+# Optional: Geocoding
+# geopy>=2.4.0
+
